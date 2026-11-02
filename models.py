@@ -5,6 +5,9 @@ db = SQLAlchemy()
 
 class Venue(db.Model):
     __tablename__ = "Venue"
+    __table_args__ = (
+        db.UniqueConstraint("name", "city", "state", "address", name="uq_venue_identity"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
@@ -27,6 +30,9 @@ class Venue(db.Model):
 
 class Artist(db.Model):
     __tablename__ = "Artist"
+    __table_args__ = (
+        db.UniqueConstraint("name", "city", "state", name="uq_artist_identity"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
@@ -48,6 +54,9 @@ class Artist(db.Model):
 
 class Show(db.Model):
     __tablename__ = "Show"
+    __table_args__ = (
+        db.UniqueConstraint("venue_id", "artist_id", "start_time", name="uq_show_booking"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     venue_id = db.Column(db.Integer, db.ForeignKey("Venue.id"), nullable=False)
