@@ -2,15 +2,13 @@
 # Imports
 #----------------------------------------------------------------------------#
 
-import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify
+from flask import Flask, render_template, request, flash, redirect, url_for, jsonify
 from flask_moment import Moment
 from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
-from flask_wtf import Form
 from forms import *
 from models import db, Venue, Artist, Show
 from datetime import datetime
@@ -84,8 +82,6 @@ def search_venues():
     .order_by(Venue.name)
     .all()
   )
-  # seach for Hop should return "The Musical Hop".
-  # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   response={
     "count": len(rows),
     "data": [{
@@ -174,8 +170,6 @@ def create_venue_submission():
   finally:
     db.session.close()
 
-
-  # on successful db insert, flash success
   if not error:
     flash('Venue ' + form.name.data + ' was successfully listed!')
   else:
@@ -193,7 +187,7 @@ def delete_venue(venue_id):
   except Exception:
     error = True
     db.session.rollback()
-    app.logger.exception("Failed to delete venu")
+    app.logger.exception("Failed to delete venue")
   finally:
     db.session.close()
   
@@ -216,8 +210,6 @@ def artists():
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
-  # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
-  # search for "band" should return "The Wild Sax Band".
   search_term = request.form.get('search_term', '')
   rows = (
     db.session.query(Artist, db.func.count(Show.id))
@@ -239,7 +231,6 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-  # shows the artist page with the given artist_id
   artist = Artist.query.get_or_404(artist_id)
 
   now = datetime.now()
@@ -284,7 +275,6 @@ def edit_artist(artist_id):
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
-  # artist record with ID <artist_id> using the new attributes
   artist = Artist.query.get_or_404(artist_id)
   form = ArtistForm(request.form, meta={'csrf': False})
   if not form.validate():
@@ -318,7 +308,6 @@ def edit_venue(venue_id):
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
-  # venue record with ID <venue_id> using the new attributes
   venue = Venue.query.get_or_404(venue_id)
   form = VenueForm(request.form, meta={'csrf': False})
   if not form.validate():
@@ -353,7 +342,6 @@ def create_artist_form():
 
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
-  # called upon submitting the new artist listing form
   form = ArtistForm(request.form, meta={'csrf': False})
   if not form.validate():
     for field, errors in form.errors.items():
@@ -384,7 +372,7 @@ def create_artist_submission():
     db.session.close()
 
   if not error:
-    flash('Artist ' + request.form['name'] + ' was successfully listed!')
+    flash('Artist ' + form.name.data + ' was successfully listed!')
   else:
     flash('An error occurred. Artist ' + form.name.data + ' could not be listed.')
   return render_template('pages/home.html')
@@ -395,7 +383,6 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
-  # displays list of shows at /shows
   rows = (
     db.session.query(Show, Venue, Artist)
     .join(Venue)
@@ -415,13 +402,11 @@ def shows():
 
 @app.route('/shows/create')
 def create_shows():
-  # renders form. do not touch.
   form = ShowForm()
   return render_template('forms/new_show.html', form=form)
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
-  # called to create new shows in the db, upon submitting new show listing form
   form = ShowForm(request.form, meta={'csrf': False})
   if not form.validate():
     for field, errors in form.errors.items():
@@ -448,8 +433,6 @@ def create_show_submission():
     flash('Show was successfully listed!')
   else:
     flash('An error occurred. Show could not be listed.')
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
   return render_template('pages/home.html')
 
 @app.errorhandler(404)
