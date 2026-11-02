@@ -76,6 +76,21 @@
 </section>
 
 <a href="/venues/{{ venue.id }}/edit"><button class="btn btn-primary btn-lg">Edit</button></a>
+<button id="delete-venue" class="btn btn-danger btn-lg" data-id="{{ venue.id }}">Delete</button>
+
+<script>
+  document.getElementById('delete-venue').onclick = function (e) {
+    if (!confirm('Delete this venue and all of its shows?')) return;
+    fetch('/venues/' + e.target.dataset.id, { method: 'DELETE' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('Delete failed');
+        window.location.href = '/venues';
+      })
+      .catch(function () {
+        alert('An error occurred. The venue could not be deleted.');
+      });
+  };
+</script>
 
 {% endblock %}
 
