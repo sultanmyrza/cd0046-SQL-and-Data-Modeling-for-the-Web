@@ -10,7 +10,7 @@ from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
 from forms import *
-from models import db, Venue, Artist, Show
+from models import db, Venue, Artist, Show, Genre
 from datetime import datetime
 #----------------------------------------------------------------------------#
 # App Config.
@@ -35,6 +35,17 @@ def format_datetime(value, format='medium'):
   return babel.dates.format_datetime(date, format, locale='en')
 
 app.jinja_env.filters['datetime'] = format_datetime
+
+#----------------------------------------------------------------------------#
+# Helpers.
+#----------------------------------------------------------------------------#
+
+def populate_with_genres(form, obj):
+  # Genres are Genre rows, not plain strings, so they are set separately
+  for field in form:
+    if field.name != 'genres':
+      field.populate_obj(obj, field.name)
+  obj.genres = Genre.from_names(form.genres.data)
 
 #----------------------------------------------------------------------------#
 # Controllers.
@@ -113,7 +124,7 @@ def show_venue(venue_id):
   data = {
     'id': venue.id,
     'name': venue.name,
-    'genres': venue.genres,
+    'genres': venue.genre_names,
     'address': venue.address,
     'city': venue.city,
     'state': venue.state,
@@ -154,7 +165,7 @@ def create_venue_submission():
       state=form.state.data,
       address=form.address.data,
       phone=form.phone.data,
-      genres=form.genres.data,
+      genres=Genre.from_names(form.genres.data),
       image_link=form.image_link.data,
       facebook_link=form.facebook_link.data,
       website_link=form.website_link.data,
@@ -247,7 +258,7 @@ def show_artist(artist_id):
   data = {
     'id': artist.id,
     'name': artist.name,
-    'genres': artist.genres,
+    'genres': artist.genre_names,
     'city': artist.city,
     'state': artist.state,
     'phone': artist.phone,
@@ -269,6 +280,7 @@ def show_artist(artist_id):
 def edit_artist(artist_id):
   artist = Artist.query.get_or_404(artist_id)
   form = ArtistForm(obj=artist)
+  form.genres.data = artist.genre_names
   return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
@@ -282,7 +294,7 @@ def edit_artist_submission(artist_id):
 
   error = False
   try:
-    form.populate_obj(artist)
+    populate_with_genres(form, artist)
     db.session.commit()
   except Exception:
     error = True
@@ -302,6 +314,7 @@ def edit_artist_submission(artist_id):
 def edit_venue(venue_id):
   venue = Venue.query.get_or_404(venue_id)
   form = VenueForm(obj=venue)
+  form.genres.data = venue.genre_names
   return render_template('forms/edit_venue.html', form=form, venue=venue)
 
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
@@ -315,7 +328,7 @@ def edit_venue_submission(venue_id):
 
   error = False
   try:
-    form.populate_obj(venue)
+    populate_with_genres(form, venue)
     db.session.commit()
   except Exception:
     error = True
@@ -353,7 +366,7 @@ def create_artist_submission():
       city=form.city.data,
       state=form.state.data,
       phone=form.phone.data,
-      genres=form.genres.data,
+      genres=Genre.from_names(form.genres.data),
       image_link=form.image_link.data,
       facebook_link=form.facebook_link.data,
       website_link=form.website_link.data,

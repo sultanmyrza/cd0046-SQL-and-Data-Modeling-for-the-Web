@@ -1,15 +1,23 @@
 from datetime import datetime
 
 from app import app
-from models import Artist, Show, Venue, db
+from models import Artist, Genre, Show, Venue, db
 
 with app.app_context():
     # Empty all tables and restart ids at 1 so re-runnings are idempotent
-    db.session.execute('TRUNCATE "Show", "Venue", "Artist" RESTART IDENTITY CASCADE')
+    db.session.execute(
+        'TRUNCATE "Show", "Venue", "Artist", "Genre", venue_genres, artist_genres RESTART IDENTITY CASCADE'
+    )
+
+    # One Genre row per name, shared by every venue and artist that uses it
+    genre_rows = {}
+
+    def genres(*names):
+        return [genre_rows.setdefault(name, Genre(name=name)) for name in names]
 
     musical_hop = Venue(
         name="The Musical Hop",
-        genres=["Jazz", "Reggae", "Swing", "Classical", "Folk"],
+        genres=genres("Jazz", "Reggae", "Swing", "Classical", "Folk"),
         address="1015 Folsom Street",
         city="San Francisco",
         state="CA",
@@ -22,7 +30,7 @@ with app.app_context():
     )
     dueling_pianos = Venue(
         name="The Dueling Pianos Bar",
-        genres=["Classical", "R&B", "Hip-Hop"],
+        genres=genres("Classical", "R&B", "Hip-Hop"),
         address="335 Delancey Street",
         city="New York",
         state="NY",
@@ -34,7 +42,7 @@ with app.app_context():
     )
     park_square = Venue(
         name="Park Square Live Music & Coffee",
-        genres=["Rock n Roll", "Jazz", "Classical", "Folk"],
+        genres=genres("Rock n Roll", "Jazz", "Classical", "Folk"),
         address="34 Whiskey Moore Ave",
         city="San Francisco",
         state="CA",
@@ -47,7 +55,7 @@ with app.app_context():
 
     guns_n_petals = Artist(
         name="Guns N Petals",
-        genres=["Rock n Roll"],
+        genres=genres("Rock n Roll"),
         city="San Francisco",
         state="CA",
         phone="326-123-5000",
@@ -59,7 +67,7 @@ with app.app_context():
     )
     matt_quevedo = Artist(
         name="Matt Quevedo",
-        genres=["Jazz"],
+        genres=genres("Jazz"),
         city="New York",
         state="NY",
         phone="300-400-5000",
@@ -69,7 +77,7 @@ with app.app_context():
     )
     wild_sax_band = Artist(
         name="The Wild Sax Band",
-        genres=["Jazz", "Classical"],
+        genres=genres("Jazz", "Classical"),
         city="San Francisco",
         state="CA",
         phone="432-325-5432",
