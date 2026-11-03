@@ -1,14 +1,14 @@
 from datetime import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField
+from wtforms import StringField, SelectField, SelectMultipleField, DateTimeField, BooleanField, IntegerField
 from wtforms.validators import DataRequired, AnyOf, URL, Optional, InputRequired
 
 class ShowForm(FlaskForm):
-    artist_id = StringField(
-        'artist_id'
+    artist_id = IntegerField(
+        'artist_id', validators=[DataRequired()]
     )
-    venue_id = StringField(
-        'venue_id'
+    venue_id = IntegerField(
+        'venue_id', validators=[DataRequired()]
     )
     start_time = DateTimeField(
         'start_time',
@@ -117,7 +117,7 @@ class VenueForm(FlaskForm):
         'facebook_link', validators=[Optional(), URL()]
     )
     website_link = StringField(
-        'website_link'
+        'website_link', validators=[Optional(), URL()]
     )
 
     seeking_talent = BooleanField( 'seeking_talent' )
@@ -228,7 +228,7 @@ class ArtistForm(FlaskForm):
      )
 
     website_link = StringField(
-        'website_link'
+        'website_link', validators=[Optional(), URL()]
      )
 
     seeking_venue = BooleanField( 'seeking_venue' )
