@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -59,6 +61,41 @@ class Venue(db.Model):
     def genre_names(self):
         return [genre.name for genre in self.genres]
 
+    @classmethod
+    def _with_upcoming_show_counts(cls):
+        """(venue, number of upcoming shows) pairs; venues without upcoming shows count 0."""
+        return (
+            db.session.query(cls, db.func.count(Show.id))
+            .outerjoin(Show, db.and_(Show.venue_id == cls.id, Show.is_upcoming()))
+            .group_by(cls.id)
+        )
+
+    @classmethod
+    def list_with_upcoming_show_counts(cls):
+        """All venues with upcoming show counts, ordered by state, city and name."""
+        return cls._with_upcoming_show_counts().order_by(cls.state, cls.city, cls.name).all()
+
+    @classmethod
+    def search(cls, term):
+        """Venues whose name contains term (case-insensitive), with upcoming show counts."""
+        return (
+            cls._with_upcoming_show_counts()
+            .filter(cls.name.ilike(f"%{term}%"))
+            .order_by(cls.name)
+            .all()
+        )
+
+    def _shows_with_artists(self):
+        return db.session.query(Show, Artist).join(Artist).filter(Show.venue_id == self.id)
+
+    def upcoming_shows(self):
+        """(show, artist) pairs for upcoming shows at this venue, soonest first."""
+        return self._shows_with_artists().filter(Show.is_upcoming()).order_by(Show.start_time).all()
+
+    def past_shows(self):
+        """(show, artist) pairs for past shows at this venue, most recent first."""
+        return self._shows_with_artists().filter(Show.is_past()).order_by(Show.start_time.desc()).all()
+
 
 class Artist(db.Model):
     __tablename__ = "Artist"
@@ -87,6 +124,33 @@ class Artist(db.Model):
     def genre_names(self):
         return [genre.name for genre in self.genres]
 
+    @classmethod
+    def list_by_name(cls):
+        return cls.query.order_by(cls.name).all()
+
+    @classmethod
+    def search(cls, term):
+        """Artists whose name contains term (case-insensitive), with upcoming show counts."""
+        return (
+            db.session.query(cls, db.func.count(Show.id))
+            .outerjoin(Show, db.and_(Show.artist_id == cls.id, Show.is_upcoming()))
+            .filter(cls.name.ilike(f"%{term}%"))
+            .group_by(cls.id)
+            .order_by(cls.name)
+            .all()
+        )
+
+    def _shows_with_venues(self):
+        return db.session.query(Show, Venue).join(Venue).filter(Show.artist_id == self.id)
+
+    def upcoming_shows(self):
+        """(show, venue) pairs for this artist's upcoming shows, soonest first."""
+        return self._shows_with_venues().filter(Show.is_upcoming()).order_by(Show.start_time).all()
+
+    def past_shows(self):
+        """(show, venue) pairs for this artist's past shows, most recent first."""
+        return self._shows_with_venues().filter(Show.is_past()).order_by(Show.start_time.desc()).all()
+
 
 class Show(db.Model):
     __tablename__ = "Show"
@@ -98,3 +162,23 @@ class Show(db.Model):
     venue_id = db.Column(db.Integer, db.ForeignKey("Venue.id"), nullable=False)
     artist_id = db.Column(db.Integer, db.ForeignKey("Artist.id"), nullable=False)
     start_time = db.Column(db.DateTime, nullable=False)
+
+    @classmethod
+    def is_upcoming(cls):
+        """SQL condition for shows that haven't started yet."""
+        return cls.start_time > datetime.now()
+
+    @classmethod
+    def is_past(cls):
+        return cls.start_time <= datetime.now()
+
+    @classmethod
+    def list_with_details(cls):
+        """(show, venue, artist) for every show, oldest first."""
+        return (
+            db.session.query(cls, Venue, Artist)
+            .join(Venue)
+            .join(Artist)
+            .order_by(cls.start_time)
+            .all()
+        )

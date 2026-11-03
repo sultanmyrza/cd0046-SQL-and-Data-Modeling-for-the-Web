@@ -11,7 +11,6 @@ import logging
 from logging import Formatter, FileHandler
 from forms import *
 from models import db, Venue, Artist, Show, Genre
-from datetime import datetime
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -61,15 +60,8 @@ def index():
 
 @app.route('/venues')
 def venues():
-  rows = (
-    db.session.query(Venue, db.func.count(Show.id))
-    .outerjoin(Show, db.and_(Show.venue_id == Venue.id, Show.start_time > datetime.now()))
-    .group_by(Venue.id)
-    .order_by(Venue.state, Venue.city, Venue.name)
-    .all()
-  )
   data = {}
-  for venue, num_upcoming_shows in rows:
+  for venue, num_upcoming_shows in Venue.list_with_upcoming_show_counts():
     area = data.setdefault(
       (venue.city, venue.state),
       {'city': venue.city, 'state': venue.state, 'venues': []}
@@ -85,14 +77,7 @@ def venues():
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
   search_term = request.form.get('search_term', '')
-  rows = (
-    db.session.query(Venue, db.func.count(Show.id))
-    .outerjoin(Show, db.and_(Show.venue_id == Venue.id, Show.start_time > datetime.now()))
-    .filter(Venue.name.ilike(f'%{search_term}%'))
-    .group_by(Venue.id)
-    .order_by(Venue.name)
-    .all()
-  )
+  rows = Venue.search(search_term)
   response={
     "count": len(rows),
     "data": [{
@@ -108,10 +93,8 @@ def show_venue(venue_id):
   # shows the venue page with the given venue_id
   venue = Venue.query.get_or_404(venue_id)
 
-  now = datetime.now()
-  shows = db.session.query(Show, Artist).join(Artist).filter(Show.venue_id == venue_id)
-  upcoming = shows.filter(Show.start_time > now).order_by(Show.start_time).all()
-  past = shows.filter(Show.start_time <= now).order_by(Show.start_time.desc()).all()
+  upcoming = venue.upcoming_shows()
+  past = venue.past_shows()
 
   def show_data(show, artist):
     return {
@@ -213,21 +196,14 @@ def delete_venue(venue_id):
 def artists():
   data = [
     {'id': artist.id, 'name': artist.name}
-    for artist in Artist.query.order_by(Artist.name).all()
+    for artist in Artist.list_by_name()
   ]
   return render_template('pages/artists.html', artists=data)
 
 @app.route('/artists/search', methods=['POST'])
 def search_artists():
   search_term = request.form.get('search_term', '')
-  rows = (
-    db.session.query(Artist, db.func.count(Show.id))
-    .outerjoin(Show, db.and_(Show.artist_id == Artist.id, Show.start_time > datetime.now()))
-    .filter(Artist.name.ilike(f'%{search_term}%'))
-    .group_by(Artist.id)
-    .order_by(Artist.name)
-    .all()
-  )
+  rows = Artist.search(search_term)
   response={
     "count": len(rows),
     "data": [{
@@ -236,16 +212,14 @@ def search_artists():
       "num_upcoming_shows": num_upcoming_shows,
     } for artist, num_upcoming_shows in rows]
   }
-  return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
+  return render_template('pages/search_artists.html', results=response, search_term=search_term)
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
   artist = Artist.query.get_or_404(artist_id)
 
-  now = datetime.now()
-  shows = db.session.query(Show, Venue).join(Venue).filter(Show.artist_id == artist_id)
-  upcoming = shows.filter(Show.start_time > now).order_by(Show.start_time).all()
-  past = shows.filter(Show.start_time <= now).order_by(Show.start_time.desc()).all()
+  upcoming = artist.upcoming_shows()
+  past = artist.past_shows()
 
   def show_data(show, venue):
     return {
@@ -394,13 +368,6 @@ def create_artist_submission():
 
 @app.route('/shows')
 def shows():
-  rows = (
-    db.session.query(Show, Venue, Artist)
-    .join(Venue)
-    .join(Artist)
-    .order_by(Show.start_time)
-    .all()
-  )
   data = [{
     'venue_id': venue.id,
     'venue_name': venue.name,
@@ -408,7 +375,7 @@ def shows():
     'artist_name': artist.name,
     'artist_image_link': artist.image_link,
     'start_time': str(show.start_time),
-  } for show, venue, artist in rows]
+  } for show, venue, artist in Show.list_with_details()]
   return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
