@@ -134,7 +134,7 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-  form = VenueForm(request.form, meta={'csrf': False})
+  form = VenueForm(request.form)
   if not form.validate():
     for field, errors in form.errors.items():
       flash(f'{field}: {", ".join(errors)}')
@@ -260,7 +260,7 @@ def edit_artist(artist_id):
 @app.route('/artists/<int:artist_id>/edit', methods=['POST'])
 def edit_artist_submission(artist_id):
   artist = Artist.query.get_or_404(artist_id)
-  form = ArtistForm(request.form, meta={'csrf': False})
+  form = ArtistForm(request.form)
   if not form.validate():
     for field, errors in form.errors.items():
       flash(f'{field}: {", ".join(errors)}')
@@ -294,7 +294,7 @@ def edit_venue(venue_id):
 @app.route('/venues/<int:venue_id>/edit', methods=['POST'])
 def edit_venue_submission(venue_id):
   venue = Venue.query.get_or_404(venue_id)
-  form = VenueForm(request.form, meta={'csrf': False})
+  form = VenueForm(request.form)
   if not form.validate():
     for field, errors in form.errors.items():
       flash(f'{field}: {", ".join(errors)}')
@@ -327,7 +327,7 @@ def create_artist_form():
 
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
-  form = ArtistForm(request.form, meta={'csrf': False})
+  form = ArtistForm(request.form)
   if not form.validate():
     for field, errors in form.errors.items():
       flash(f'{field}: {", ".join(errors)}')
@@ -385,7 +385,7 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
-  form = ShowForm(request.form, meta={'csrf': False})
+  form = ShowForm(request.form)
   if not form.validate():
     for field, errors in form.errors.items():
       flash(f'{field}: {", ".join(errors)}')
