@@ -1,8 +1,6 @@
 from datetime import datetime
 
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
+from extensions import db
 
 
 # Many-to-many links between venues/artists and genres
@@ -52,6 +50,7 @@ class Venue(db.Model):
     seeking_description = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
 
+    # deleting a venue also deletes its shows
     shows = db.relationship(
         "Show", backref="venue", lazy=True, cascade="all, delete-orphan"
     )
@@ -115,6 +114,7 @@ class Artist(db.Model):
     seeking_description = db.Column(db.String(500))
     created_at = db.Column(db.DateTime, nullable=False, server_default=db.func.now())
 
+    # deleting an artist also deletes its shows
     shows = db.relationship(
         "Show", backref="artist", lazy=True, cascade="all, delete-orphan"
     )
@@ -153,6 +153,8 @@ class Artist(db.Model):
 
 
 class Show(db.Model):
+    """An artist playing at a venue at a given time. Links Venue and Artist (many-to-many)."""
+
     __tablename__ = "Show"
     __table_args__ = (
         db.UniqueConstraint("venue_id", "artist_id", "start_time", name="uq_show_booking"),

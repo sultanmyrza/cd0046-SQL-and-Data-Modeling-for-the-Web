@@ -1,7 +1,9 @@
 from datetime import datetime
 
-from app import app
+from app import create_app
 from models import Artist, Genre, Show, Venue, db
+
+app = create_app()
 
 with app.app_context():
     # Empty all tables and restart ids at 1 so re-runnings are idempotent

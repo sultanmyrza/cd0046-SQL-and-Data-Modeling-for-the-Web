@@ -28,17 +28,29 @@ createdb fyyur
 
 If your username, password or port differ, edit `SQLALCHEMY_DATABASE_URI` in `config.py`.
 
-## 2. Install and run
+## 2. Install
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+```
 
+## 3. Set up the database
+
+```bash
 export FLASK_APP=app.py
 flask db upgrade     # create the tables
 python3 seed.py      # optional: add sample data (this resets all tables)
-python3 app.py
+```
+
+## 4. Run
+
+```bash
+export FLASK_ENV=development   # debugger and auto-reload
+flask run
 ```
 
 Then open http://127.0.0.1:5000.
+
+In a new terminal, run `source .venv/bin/activate` and `export FLASK_APP=app.py` again first.
